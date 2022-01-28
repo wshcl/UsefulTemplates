@@ -1,0 +1,218 @@
+class IO {
+	#define MAXSIZE 1<<17
+    #define isdigit(x) (x>47&&x<58)
+    #define isspace(c) (c==' '||c=='\n'||c=='\r'||c=='\t')
+    #if FREAD
+        #define lastchar() (s1==s3)||(--s1)
+    #else
+        #define lastchar() needflush=false
+    #endif
+    public:
+    	inline IO(FILE *_stream=stdin,FILE *__stream=stdout) {
+    		sta_int[0]=sta_float[0]='\0',reset(_stream,__stream);
+    	}
+        inline ~IO() {close();}
+        inline void reset(FILE *_stream=stdin,FILE *__stream=stdout) {
+        	#if FREAD 
+		        s1=s3=ibuf,s2=obuf,
+	        #else
+	            needflush=true,
+	        #endif
+		    in_stream=_stream,out_stream=__stream,
+	        bad=false,good=true;
+        }
+        inline int get() {
+        	#if FREAD
+        		return (s1==s3&&(s3=(s1=ibuf)+fread(ibuf,1,MAXSIZE,in_stream),good=!bad,bad=(s1==s3)))?0:*s1++;
+        	#else
+                return (needflush?tempchar=fgetc(in_stream):needflush=true),tempchar==0?good=!bad,bad=true,0:tempchar;
+            #endif
+        }
+        inline void put(char c) {
+        	#if FREAD
+        		(s2-obuf==MAXSIZE)&&(fwrite(obuf,1,s2-obuf,out_stream),s2=obuf),*s2++=c;
+        	#else
+                fputc(c,out_stream);
+            #endif
+        }
+    	template<class T>
+	    inline IO &read_int(T &x) {
+	        register int c=get();
+	        while(isspace(c)&&c)
+	        	c=get();
+	        register bool f=(c==45);
+	        x=0,isdigit(c)||(c=get());
+	        while(isdigit(c))
+	        	x=(x<<1)+(x<<3)+(c&15),c=get();
+	        return f&&(x=-x),lastchar(),*this;
+	    }
+	    template<class T>
+	    inline IO &read_float(T &x) {
+	        register int c=get();
+	        while(isspace(c)&&c)c=get();
+		    register bool f=(c==45);
+		    x=0,isdigit(c)||(c=get());
+		    while(isdigit(c))x=(x*10)+(c&15),c=get();
+	        if(c=='.') {
+	            register T tmp=1;
+	            c=get();
+	            while(isdigit(c))x+=(tmp/=10)*(c&15),c=get();
+	        }
+	        return f&&(x=-x),lastchar(),*this;
+	    }
+        template<class T>
+        inline IO &read_char(T &c) {
+        	c=get();
+        	while(isspace(c))
+        		c=get();
+        	return *this;
+        }
+        inline IO &read_str(char *s) {
+            register char c=get();
+            while(isspace(c)&&c)
+            	c=get();
+            while(!isspace(c)&&c)
+            	*s++=c,c=get();
+            return *s='\0',lastchar(),*this;
+        }
+        inline IO &read_string(std::string &s) {
+            register char c=get();
+            while(isspace(c))
+            	c=get();
+            s=c,c=get();
+            while(!isspace(c)&&c)
+            	s.push_back(c),c=get();
+            return lastchar(),*this;
+        }
+        inline IO &getline(char *s) {
+            register char c=get();
+            while(isspace(c))
+            	c=get();
+            while(c!='\n'&&c)
+            	*s++=c,c=get();
+            return *s='\0',lastchar(),*this;
+        }
+        inline IO &getline(std::string &s) {
+            register char c=get();
+            while(isspace(c))
+            	c=get();
+            s=c,c=get();
+            while(c!='\n'&&c)
+            	s.push_back(c),c=get();
+            return lastchar(),*this;
+        }
+        template<class T>
+        inline IO &read(T &x) 
+        	{return read_int(x);}
+        inline IO &read(float &x) 
+        	{return read_float(x);}
+        inline IO &read(double &x) 
+        	{return read_float(x);}
+        inline IO &read(long double &x) 
+        	{return read_float(x);}
+        inline IO &read(char &x) 
+        	{return read_char(x);}
+        inline IO &read(char *s) 
+        	{return read_str(s);}
+        inline IO &read(std::string &s) 
+        	{return read_string(s);}
+        template<class T>
+		inline IO &write_int(T x) {
+            register char *p=sta_int;
+            (x<0)&&(put('-'),x=~x+1),*++p=(x%10)|'0',x/=10;
+            while(x)
+            	*++p=(x%10)|'0',x/=10; 
+            while(*p)   
+            	put(*p--);
+            return *this;
+		}
+		template<class P,class T>
+		inline IO &write_float(T y,const int k=6) {
+            (y<0)&&(put('-'),y=-y);
+            P x=y;
+            y-=x;
+            if(k) {
+            	register char *p1=sta_float,*p2=sta_float+k,*p3=sta_float+1;
+                while(p1!=p2)
+                	*++p1=(y*10),y=y*10-*p1;
+                *p1+=(int(y*10)>4);
+                while(*p1&&*p1==10)
+                	++(*(p1-1)),*(p1+1)-=10,*--p1;
+                write(x+(*p3==10)),put('.'),put(*p3==10?'0':*p3|'0');
+                while(p3!=p2)
+                	put(*++p3|'0');
+            }
+            else
+            	write(x+(int(y*10)>4));
+            return *this;
+        }
+        template<class T>
+        inline IO &write_char(const T c) {
+        	return put(c),*this;
+        }
+        inline IO &write_str(char *s) {
+            while(*s)
+            	put(*s++);
+            return *this;
+        }
+        inline IO &write_string(const char *s) {
+            while(*s)
+            	put(*s++);
+            return *this;
+        }
+        template<class T>
+		inline IO &write(T x) 
+			{return write_int(x);}
+		inline IO &write(float y,const int k=6) 
+			{return write_float<unsigned int>(y,k);}
+        inline IO &write(double y,const int k=6) 
+        	{return write_float<unsigned int>(y,k);}
+        inline IO &write(long double y,const int k=6) 
+        	{return write_float<unsigned long long>(y,k);}
+		inline IO &write(const char c) 
+			{return write_char(c);}
+        inline IO &write(char *s) 
+        	{return write_str(s);}
+        inline IO &write(const char *s) 
+        	{return write_string(s);}
+        inline IO &write(const std::string str) 
+        	{return write_string(str.c_str());}
+        template<class T,class ...Args>
+        inline IO &read(T &x,Args &...args) {
+        	return read(x),read(args...);
+        }
+        template<class T,class ...Args>
+        inline IO &write(T x,Args ...args) {
+        	return write(x),write(args...);
+        }
+        template<class T>
+        inline IO &operator >> (T &x) {
+        	return read(x);
+        }
+        template<class T>
+        inline IO &operator << (const T x) {
+        	return write(x);
+        }
+        inline operator bool() {
+        	return good;
+        }
+        inline void open(FILE *_stream=stdin,FILE *__stream=stdout) {
+        	close(),reset(_stream,__stream);
+        }
+        inline void close() {
+        	#if FREAD
+        		fwrite(obuf,1,s2-obuf,out_stream),s2=obuf,
+        	#endif
+        	fclose(in_stream),fclose(out_stream);
+        }
+    private:
+        char ibuf[MAXSIZE],obuf[MAXSIZE],*s1,*s2,*s3;
+        char sta_int[257],sta_float[257];
+        int tempchar;
+        bool good,bad,needflush;
+    	FILE *in_stream,*out_stream;
+    #undef MAXSIZE
+    #undef isdigit
+    #undef isspace
+    #undef lastchar
+}io;
